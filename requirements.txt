@@ -1,2 +1,4 @@
 colorama
 termcolor
+requests
+bs4
