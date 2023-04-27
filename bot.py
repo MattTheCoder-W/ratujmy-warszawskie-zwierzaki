@@ -47,8 +47,9 @@ def vote():
     url = f"https://www.1secmail.com/api/v1/?action=getMessages&login={username}&domain={server}"
     mail_id = None
 
-    for i in range(5):
-        if i >= 5:
+    print(f"[INFO] Waiting for email...")
+    for i in range(30):
+        if i >= 15:
             print(f"{Fore.RED + Style.BRIGHT}[FAIL]{Style.RESET_ALL} Mail not Received")
             return False
 
@@ -76,16 +77,18 @@ def vote():
     soup = bs(verify_req.content.decode(), 'html.parser')
     if soup.select("div.big.green"):
         print(f"{Fore.GREEN + Style.BRIGHT}[SUCCESS]{Style.RESET_ALL} Voted!")
+        return True
     else:
         print(f"{Fore.RED + Style.BRIGHT}[FAIL]{Style.RESET_ALL} Not Voted!")
+        return False
 
 
 goal = 9999999
 
 for i in range(goal):
     start = datetime.now()
-    vote()
+    status = vote()
     took = (datetime.now() - start).total_seconds()
-    if took != 0:
+    if took != 0 and status:
         print(f"{Fore.MAGENTA + Style.BRIGHT}[SPEED]{Style.RESET_ALL} {round(60/took, 2)} votes per minute")
     time.sleep(1)
