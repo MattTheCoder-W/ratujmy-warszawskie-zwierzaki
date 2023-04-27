@@ -83,7 +83,8 @@ def vote():
     else:
         print(f"{Fore.RED + Style.BRIGHT}[FAIL]{Style.RESET_ALL} Not Voted!")
 
-goal = 5
+
+goal = 9999999
 
 for i in range(goal):
     start = datetime.now()
