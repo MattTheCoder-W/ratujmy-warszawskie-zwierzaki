@@ -12,6 +12,8 @@ from termcolor import colored
 
 from datetime import datetime
 
+from concurrent.futures import ThreadPoolExecutor
+
 colorama.init()
 
 names = "Nowak;Kowalski;Wiśniewski;Dąbrowski;Lewandowski;Wójcik;Kamiński;Kowalczyk;Zieliński;Szymański;Woźniak;Kozłowski;Jankowski;Wojciechowski;Kwiatkowski;Kaczmarek;Mazur;Krawczyk;Piotrowski;Grabowski;Nowakowski;Pawłowski;Michalski;Nowicki;Adamczyk;Dudek;Zając;Wieczorek;Jabłoński;Król;Majewski;Olszewski;Jaworski;Wróbel;Malinowski;Pawlak;Witkowski;Walczak;Stępień;Górski;Rutkowski;Michalak;Sikora;Ostrowski;Baran;Duda;Szewczyk;Tomaszewski;Pietrzak;Marciniak;Wróblewski;Zalewski;Jakubowski;Jasiński;Zawadzki;Sadowski;Bąk;Chmielewski;Włodarczyk;Borkowski;Czarnecki;Sawicki;Sokołowski;Urbański;Kubiak;Maciejewski;Szczepański;Kucharski;Wilk;Kalinowski;Lis;Mazurek;Wysocki;Adamski;Kaźmierczak;Wasilewski;Sobczak;Czerwiński;Andrzejewski;Cieślak;Głowacki;Zakrzewski;Kołodziej;Sikorski;Krajewski;Gajewski;Szymczak;Szulc;Baranowski;Laskowski;Brzeziński;Makowski;Ziółkowski;Przybylski".split(";")
@@ -36,10 +38,10 @@ def make_vote(email: str):
         print(f"{Fore.GREEN + Style.BRIGHT}[SUCCESS]{Style.RESET_ALL} Email sent!")
     
 
-def vote():
+def vote(process_id):
     email = json.loads(requests.get("https://www.1secmail.com/api/v1/?action=genRandomMailbox&count=1").content.decode())
     email = email[0]
-    print(f"[INFO] Email: {email}")
+    print(f"[{process_id}][INFO] Email: {email}")
     username, server = email.split("@")
 
     make_vote(email)
@@ -47,16 +49,16 @@ def vote():
     url = f"https://www.1secmail.com/api/v1/?action=getMessages&login={username}&domain={server}"
     mail_id = None
 
-    print(f"[INFO] Waiting for email...")
-    for i in range(30):
-        if i >= 15:
+    print(f"[{process_id}][INFO] Waiting for email...")
+    for i in range(5):
+        if i >= 4:
             print(f"{Fore.RED + Style.BRIGHT}[FAIL]{Style.RESET_ALL} Mail not Received")
             return False
 
         inbox = json.loads(requests.get(url).content.decode())
         if inbox:
             mail_id = inbox[0]["id"]
-            print(f"{Fore.GREEN + Style.BRIGHT}[SUCCESS]{Style.RESET_ALL} Got email with id:", mail_id)
+            print(f"[{process_id}]{Fore.GREEN + Style.BRIGHT}[SUCCESS]{Style.RESET_ALL} Got email with id:", mail_id)
             break
         else:
             time.sleep(1)
@@ -76,19 +78,26 @@ def vote():
     verify_req = requests.get(verify_url, verify=False)
     soup = bs(verify_req.content.decode(), 'html.parser')
     if soup.select("div.big.green"):
-        print(f"{Fore.GREEN + Style.BRIGHT}[SUCCESS]{Style.RESET_ALL} Voted!")
+        print(f"[{process_id}]{Fore.GREEN + Style.BRIGHT}[SUCCESS]{Style.RESET_ALL} Voted!")
         return True
     else:
-        print(f"{Fore.RED + Style.BRIGHT}[FAIL]{Style.RESET_ALL} Not Voted!")
+        print(f"[{process_id}]{Fore.RED + Style.BRIGHT}[FAIL]{Style.RESET_ALL} Not Voted!")
         return False
 
 
-goal = 9999999
+count = 0
 
-for i in range(goal):
+def make_one():
+    global count
+    count += 1
     start = datetime.now()
-    status = vote()
+    status = vote(count)
     took = (datetime.now() - start).total_seconds()
-    if took != 0 and status:
+    if took != 0:
         print(f"{Fore.MAGENTA + Style.BRIGHT}[SPEED]{Style.RESET_ALL} {round(60/took, 2)} votes per minute")
     time.sleep(1)
+
+with ThreadPoolExecutor(max_workers=5) as executor:
+    while True:
+        executor.submit(make_one)
+        time.sleep(0.25)
